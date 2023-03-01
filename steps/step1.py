@@ -18,14 +18,12 @@
 
 import logging
 import os
-import random
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
+import pickle
 import datasets
-import evaluate
-import numpy as np
 from datasets import load_dataset
 
 import transformers
@@ -33,13 +31,9 @@ from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer,
-    DataCollatorWithPadding,
-    EvalPrediction,
     HfArgumentParser,
     PretrainedConfig,
-    Trainer,
     TrainingArguments,
-    default_data_collator,
     set_seed,
 )
 from transformers.trainer_utils import get_last_checkpoint
@@ -473,6 +467,13 @@ def main():
         file = open("tmp.txt",'w')
         print(train_dataset.data, file=file)
         print(len(train_dataset.data['input_ids'][0]))
+        print(type(train_dataset.data['input_ids']))
+        with open(os.path.join(training_args.output_dir, 'input_ids'), "wb") as fp:
+            a = train_dataset.data['input_ids'].to_pylist()
+            pickle.dump(a, fp)
+        # Read
+        # with open(args.path, "rb") as fp:
+        #     b = pickle.load(fp)
         return 
 
 if __name__ == "__main__":

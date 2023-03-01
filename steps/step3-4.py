@@ -1,26 +1,36 @@
 import torch
 from transformers import BertModel, BertTokenizer
-
+import pickle
 
 model_path = "/home/nfs_data/zhanggh/tmp/mrpc/"
 
 tokenizer = BertTokenizer.from_pretrained(model_path)
 device = torch.device('cuda')
+cpu = torch.device('cpu')
 
 # 载入模型
 model = BertModel.from_pretrained(model_path).to(device)
 # 输入文本
-input_text = "Here is some text to encode"
-# 通过tokenizer把文本变成 token_id
-input_ids = tokenizer.encode(input_text, add_special_tokens=True)
-# input_ids: [101, 2182, 2003, 2070, 3793, 2000, 4372, 16044, 102]
-input_ids = torch.tensor([input_ids]).to(device)
+with open("/home/nfs_data/zhanggh/drawatten/tmp/mrpc/input_ids", "rb") as fp:
+    input_ids = pickle.load(fp)
+input_ids = torch.tensor([input_ids]).squeeze(0).to(device)
 # 获得BERT模型最后一个隐层结果
-
+length = input_ids.shape[0]
+print(input_ids.shape)
+batch_size = 32
+attention_maps = []
 with torch.no_grad():
-    outputs = model(input_ids, output_attentions=True)  # Models outputs are now tuples
-    # hidden_states = outputs[2] # outputs["hidden_states"], given that return_dict = True
-    attention_maps = outputs[2] # outputs["attentions"]
+    for i in range(length // batch_size):
+        tmp = input_ids[i * batch_size: min((i+1) * batch_size, length)]
+        print(tmp.shape)
+        outputs = model(tmp, output_attentions=True)  # Models outputs are now tuples
+        print(outputs[0].shape)
+        print(outputs[1].shape)
+        print(outputs[2][0].shape)
+        print(outputs[2][1].shape)
+        # https://huggingface.co/docs/transformers/main_classes/output#transformers.modeling_outputs.BaseModelOutputWithPoolingAndCrossAttentions
+        attention_maps.append(outputs[2][0].to(cpu)) # outputs["attentions"]
+        attention_maps.append(outputs[2][1].to(cpu))
 print(len(attention_maps))
-print(attention_maps[0].shape)
+attention_maps = torch.tensor(attention_maps)
 torch.save(attention_maps, 'attentions.pt')

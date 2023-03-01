@@ -202,16 +202,6 @@ class ModelArguments:
         metadata={"help": "Will enable to load a pretrained model whose head dimensions are different."},
     )
 
-    output_attentions: bool = field(
-        default=False,
-        metadata={"help": "Will output all attention maps."},
-    )
-
-    do_check: bool = field(
-        default=False,
-        metadata={"help": "Only output the dataset."},
-    )
-
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -368,7 +358,6 @@ def main():
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
-        output_attentions=model_args.output_attentions
     )
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
@@ -484,18 +473,6 @@ def main():
         if data_args.max_predict_samples is not None:
             max_predict_samples = min(len(predict_dataset), data_args.max_predict_samples)
             predict_dataset = predict_dataset.select(range(max_predict_samples))
-
-    if model_args.do_check:
-        if "test" not in raw_datasets and "test_matched" not in raw_datasets:
-            raise ValueError("--do_predict requires a test dataset")
-        predict_dataset = raw_datasets["test_matched" if data_args.task_name == "mnli" else "test"]
-        if data_args.max_predict_samples is not None:
-            max_predict_samples = min(len(predict_dataset), data_args.max_predict_samples)
-            predict_dataset = predict_dataset.select(range(max_predict_samples))
-        file = open("tmp.txt",'w')
-        print(predict_dataset.data, file=file)
-        print(len(predict_dataset.data['input_ids'][0]))
-        return 
 
 
     # Log a few random samples from the training set:
